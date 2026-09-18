@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vighnaharta — The Ten Days</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FFF8E7;
+    --ink:#2A1810;
+    --saffron:#FF9933;
+    --gold:#D4AF37;
+    --maroon:#7A1F1F;
+    --card:#FFFBF2;
+    --card-border:#E8D9B5;
+    --muted:#7A6A55;
+    --accent:#C0392B;
+    --bg-page:var(--cream);
+    --hud-bg: rgba(42,24,16,0.55);
+  }
+  :root:not([data-theme="light"]) { }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg-page:#150A24;
+      --ink:#F4E9D8;
+      --card:#241333;
+      --card-border:#4A2F63;
+      --muted:#C8B8DE;
+      --hud-bg: rgba(10,4,20,0.6);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg-page:#150A24;
+    --ink:#F4E9D8;
+    --card:#241333;
+    --card-border:#4A2F63;
+    --muted:#C8B8DE;
+    --hud-bg: rgba(10,4,20,0.6);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg-page);
+    color:var(--ink);
+    font-family:'Poppins',sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:18px 12px 28px;
+  }
+  h1,h2,.display{font-family:'Yatra One',cursive; font-weight:400;}
+  .titlebar{
+    text-align:center;
+    margin-bottom:12px;
+  }
+  .titlebar h1{
+    font-size:clamp(28px,5vw,44px);
+    margin:0 0 2px;
+    color:var(--maroon);
+    background: linear-gradient(90deg, var(--maroon), var(--accent), var(--gold));
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  :root:not([data-theme="light"]) .titlebar h1{
+    filter: brightness(1.15);
+  }
+  .titlebar p{margin:0; color:var(--muted); font-size:14px; letter-spacing:.02em;}
+
+  #game-wrap{
+    position:relative;
+    width:100%;
+    max-width:960px;
+    aspect-ratio: 16/9;
+    background:#000;
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow: 0 18px 50px -18px rgba(0,0,0,0.55), 0 0 0 3px var(--gold);
+  }
+  canvas{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    display:block;
+  }
+
+  /* ---------- HUD ---------- */
+  #hud{
+    position:absolute; top:0; left:0; right:0;
+    display:none;
+    padding:10px 12px;
+    gap:10px;
+    background:linear-gradient(to bottom, var(--hud-bg), transparent);
+    pointer-events:none;
+    font-size:12px;
+    color:#fff;
+  }
+  #hud.show{display:flex; flex-direction:column;}
+  .hud-top{display:flex; justify-content:space-between; align-items:center; gap:10px;}
+  .day-badge{
+    font-family:'Yatra One',cursive;
+    background:rgba(255,153,51,0.9);
+    color:#3a1a00;
+    padding:3px 12px;
+    border-radius:999px;
+    font-size:15px;
+    white-space:nowrap;
+  }
+  .bars{display:flex; flex-direction:column; gap:5px; margin-top:6px;}
+  .bar-row{display:flex; align-items:center; gap:6px;}
+  .bar-label{width:64px; font-weight:600; font-size:11px; text-shadow:0 1px 2px #000;}
+  .bar-track{flex:1; height:9px; border-radius:5px; background:rgba(255,255,255,0.18); overflow:hidden; border:1px solid rgba(255,255,255,0.25);}
+  .bar-fill{height:100%; border-radius:5px; transition:width .18s ease;}
+  .fill-player{background:linear-gradient(90deg,#5FD068,#2E8B47);}
+  .fill-enemy{background:linear-gradient(90deg,#E74C3C,#8E1D1D);}
+  #powers-row{display:flex; gap:5px; margin-top:6px; flex-wrap:wrap;}
+  .power-chip{
+    background:rgba(255,255,255,0.15);
+    border:1px solid rgba(255,255,255,0.3);
+    border-radius:999px;
+    padding:2px 8px;
+    font-size:10px;
+  }
+  #top-right-btns{display:flex; gap:6px; pointer-events:all;}
+  .icon-btn{
+    background:rgba(0,0,0,0.4);
+    border:1px solid rgba(255,255,255,0.3);
+    color:#fff;
+    width:30px;height:30px;
+    border-radius:50%;
+    cursor:pointer;
+    font-size:14px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .icon-btn:hover{background:rgba(0,0,0,0.6);}
+
+  /* ---------- touch controls ---------- */
+  #touch-controls{
+    position:absolute; bottom:10px; left:0; right:0;
+    display:none;
+    justify-content:space-between;
+    padding:0 12px;
+    pointer-events:none;
+  }
+  #touch-controls.show{display:flex;}
+  .tc-group{display:flex; gap:8px; pointer-events:all;}
+  .tc-btn{
+    width:52px; height:52px;
+    border-radius:50%;
+    border:2px solid rgba(255,255,255,0.55);
+    background:rgba(20,10,5,0.55);
+    color:#fff;
+    font-size:20px;
+    display:flex; align-items:center; justify-content:center;
+    user-select:none;
+    touch-action:manipulation;
+  }
+  .tc-btn:active{background:rgba(255,153,51,0.7);}
+  .tc-btn.disabled{opacity:.3; pointer-events:none;}
+
+  /* ---------- overlays ---------- */
+  .overlay{
+    position:absolute; inset:0;
+    display:none;
+    align-items:center; justify-content:center;
+    background:radial-gradient(circle at 50% 30%, rgba(40,15,10,0.88), rgba(10,5,5,0.96));
+    padding:22px;
+    text-align:center;
+  }
+  .overlay.show{display:flex;}
+  .card{
+    max-width:520px;
+    width:100%;
+    background:linear-gradient(180deg, rgba(255,251,242,0.98), rgba(255,244,222,0.98));
+    color:#3a2210;
+    border-radius:16px;
+    padding:26px 24px 22px;
+    border:2px solid var(--gold);
+    box-shadow:0 20px 50px rgba(0,0,0,0.5);
+  }
+  .card .eyebrow{font-size:12px; letter-spacing:.08em; color:var(--accent); font-weight:600; margin-bottom:4px;}
+  .card h2{font-size:clamp(22px,4vw,30px); margin:0 0 8px; color:var(--maroon);}
+  .card .power-icon{font-size:40px; margin:6px 0;}
+  .card p{font-size:14.5px; line-height:1.55; color:#4a3320; margin:8px 0 18px;}
+  .card button{
+    font-family:'Poppins',sans-serif;
+    font-weight:600;
+    font-size:14.5px;
+    background:linear-gradient(180deg,#FFB84D,#FF8C1A);
+    color:#3a1a00;
+    border:none;
+    padding:11px 26px;
+    border-radius:999px;
+    cursor:pointer;
+    box-shadow:0 6px 16px rgba(255,140,26,0.4);
+  }
+  .card button:hover{filter:brightness(1.06);}
+  .card button.secondary{
+    background:transparent;
+    color:var(--maroon);
+    border:1.5px solid var(--maroon);
+    box-shadow:none;
+    margin-left:8px;
+  }
+  #overlay-menu .card{max-width:440px;}
+  #overlay-menu .logo{font-size:46px;}
+
+  /* ---------- finale ---------- */
+  #overlay-finale{
+    background:radial-gradient(ellipse at 50% 40%, #2b0f45 0%, #0d0620 70%);
+  }
+  #finale-canvas{position:absolute; inset:0; width:100%; height:100%;}
+  .finale-content{position:relative; z-index:2;}
+  .finale-content h2{
+    font-family:'Yatra One',cursive;
+    font-size:clamp(38px,9vw,74px);
+    margin:0;
+    color:#FFD873;
+    text-shadow:0 0 18px rgba(255,190,60,0.75), 0 0 40px rgba(255,140,0,0.5);
+    letter-spacing:.02em;
+  }
+  .finale-content .sub{
+    font-size:clamp(14px,2.6vw,19px);
+    color:#F4E3B8;
+    margin:8px 0 22px;
+    letter-spacing:.06em;
+  }
+  .finale-content button{
+    font-family:'Poppins',sans-serif;
+    font-weight:600;
+    background:linear-gradient(180deg,#FFD873,#E8A417);
+    color:#3a1a00;
+    border:none;
+    padding:12px 30px;
+    border-radius:999px;
+    font-size:15px;
+    cursor:pointer;
+    box-shadow:0 8px 22px rgba(232,164,23,0.5);
+  }
+
+  footer.note{
+    max-width:760px;
+    margin-top:16px;
+    font-size:12.5px;
+    color:var(--muted);
+    text-align:center;
+    line-height:1.6;
+  }
+  @media (max-width:640px){
+    .bar-label{width:52px; font-size:10px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+  <h1>Vighnaharta</h1>
+  <p>Ten Days of Ganesh Chaturthi &nbsp;·&nbsp; a battle against ten inner Asuras</p>
+</div>
+
+<div id="game-wrap">
+  <canvas id="gameCanvas" width="960" height="540"></canvas>
+  <canvas id="finale-canvas" width="960" height="540" style="display:none;"></canvas>
+
+  <div id="hud">
+    <div class="hud-top">
+      <span class="day-badge" id="day-badge">Day 1 / 10</span>
+      <div id="top-right-btns">
+        <button class="icon-btn" id="mute-btn" title="Mute">🔊</button>
+        <button class="icon-btn" id="pause-btn" title="Pause">⏸</button>
+      </div>
+    </div>
+    <div class="bars">
+      <div class="bar-row"><span class="bar-label">Ganesh ji</span><div class="bar-track"><div class="bar-fill fill-player" id="player-bar" style="width:100%"></div></div></div>
+      <div class="bar-row"><span class="bar-label" id="enemy-name-label">Asura</span><div class="bar-track"><div class="bar-fill fill-enemy" id="enemy-bar" style="width:100%"></div></div></div>
+    </div>
+    <div id="powers-row"></div>
+  </div>
+
+  <div id="touch-controls">
+    <div class="tc-group">
+      <div class="tc-btn" id="tc-left">◀</div>
+      <div class="tc-btn" id="tc-right">▶</div>
+    </div>
+    <div class="tc-group">
+      <div class="tc-btn disabled" id="tc-chakra">🌀</div>
+      <div class="tc-btn" id="tc-attack">⚔</div>
+    </div>
+  </div>
+
+  <!-- generic story/cutscene overlay -->
+  <div class="overlay" id="overlay-card">
+    <div class="card">
+      <div class="eyebrow" id="card-eyebrow">DAY 1</div>
+      <h2 id="card-title">Title</h2>
+      <div class="power-icon" id="card-icon" style="display:none;"></div>
+      <p id="card-body">Body text</p>
+      <button id="card-btn">Continue</button>
+      <button class="secondary" id="card-btn2" style="display:none;">Retry</button>
+    </div>
+  </div>
+
+  <!-- start menu -->
+  <div class="overlay show" id="overlay-menu">
+    <div class="card">
+      <div class="logo">🐘</div>
+      <h2>Vighnaharta</h2>
+      <p>Across ten days of Ganesh Chaturthi, guide Ganesh ji through ten locations to overcome ten Asuras — each one an obstacle given form. Earn a new power after every victory. On the fifth day, Mushak the loyal vahan joins the fight.</p>
+      <button id="btn-begin">Begin the Journey</button>
+      <button class="secondary" id="btn-continue" style="display:none;">Continue Saved Journey</button>
+    </div>
+  </div>
+
+  <!-- finale -->
+  <div class="overlay" id="overlay-finale">
+    <canvas id="finale-canvas2" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
+    <div class="finale-content">
+      <h2>Vighnaharta</h2>
+      <div class="sub">THE REMOVER OF OBSTACLES</div>
+      <button id="btn-replay">Play Again</button>
+    </div>
+  </div>
+</div>
+
+<footer class="note">
+  Controls: <strong>←/→</strong> or <strong>A/D</strong> to move · <strong>Z</strong> or tap ⚔ to attack ·
+  <strong>X</strong> or tap 🌀 for Chakra once unlocked (Day 9). Progress is saved on this device automatically.
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================= AUDIO ============================= */
+let actx = null, soundOn = true;
+try{ soundOn = localStorage.getItem('vh_sound') !== 'off'; }catch(e){}
+function ensureAudio(){
+  if(!actx){
+    try{ actx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ actx=null; }
+  }
+  if(actx && actx.state === 'suspended'){ actx.resume(); }
+}
+function tone(freq, start, dur, type, vol){
+  if(!soundOn || !actx) return;
+  try{
+    const osc = actx.createOscillator();
+    const gain = actx.createGain();
+    osc.type = type || 'sine';
+    osc.frequency.value = freq;
+    const t0 = actx.currentTime + start;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(vol||0.18, t0+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    osc.connect(gain).connect(actx.destination);
+    osc.start(t0); osc.stop(t0+dur+0.02);
+  }catch(e){}
+}
+function playSwing(){ tone(340,0,0.07,'triangle',0.12); }
+function playHit(){ tone(120,0,0.09,'square',0.22); tone(80,0.02,0.12,'sawtooth',0.14); }
+function playChakra(){ tone(600,0,0.15,'sine',0.15); tone(900,0.05,0.12,'sine',0.1); }
+function playLevelUp(){ [523,659,784].forEach((f,i)=>tone(f,i*0.09,0.16,'triangle',0.16)); }
+function playDefeatJingle(){ [300,260,220].forEach((f,i)=>tone(f,i*0.12,0.2,'sawtooth',0.13)); }
+function playVictoryFanfare(){
+  const notes = [523,523,523,659,784,784,659,784,988,1175];
+  const durs =  [0.14,0.14,0.14,0.14,0.2,0.14,0.14,0.14,0.14,0.5];
+  let t=0;
+  for(let i=0;i<notes.length;i++){ tone(notes[i], t, durs[i]+0.05, 'triangle', 0.17); t+=durs[i]; }
+  // low bell drone
+  tone(196,0,2.2,'sine',0.08);
+  tone(261,0.05,2.0,'sine',0.06);
+}
+
+/* ============================= LEVEL DATA ============================= */
+const LEVELS = [
+  { day:1, asura:"Vighnasura", title:"Day 1 · The Village Outskirts",
+    type:"spiky", bgTop:"#FDE08D", bgMid:"#F7B84B", bgBot:"#B9701F", loc:{hills:true},
+    hp:60, dmg:6, spd:70, atkCd:1.5,
+    power:"Modak Shakti", icon:"🍡",
+    intro:"At the village gate, a small, stubborn demon of obstacles blocks the path. Vighnasura feeds on hesitation.",
+    victory:"Vighnasura scatters into dust. From the offering plate, a warm modak glows — Ganesh ji feels new strength in his arms.",
+    statBoost:{dmg:3} },
+
+  { day:2, asura:"Tamasura", title:"Day 2 · The Riverbank at Dusk",
+    type:"wispy", bgTop:"#4A3B7A", bgMid:"#2E2657", bgBot:"#140F2E", loc:{water:true},
+    hp:85, dmg:8, spd:80, atkCd:1.4,
+    power:"Divya Drishti", icon:"👁️",
+    intro:"On the misty riverbank, Tamasura the demon of darkness clouds the water, hiding the true path forward.",
+    victory:"The shadows burn away in a wash of light. Ganesh ji's sight sharpens — he can now strike from further away.",
+    statBoost:{range:14} },
+
+  { day:3, asura:"Krodhasura", title:"Day 3 · The Volcanic Ridge",
+    type:"flame", bgTop:"#FF7A3D", bgMid:"#B8321A", bgBot:"#2B0A05", loc:{embers:true},
+    hp:115, dmg:11, spd:95, atkCd:1.2,
+    power:"Parashu", icon:"🪓",
+    intro:"Rivers of molten rock mark Krodhasura's domain — the demon of anger, quick to lash out.",
+    victory:"Krodhasura's fire is quenched. Rising from the ash-covered ground: a gleaming axe, Parashu, humming with power.",
+    statBoost:{dmg:6} },
+
+  { day:4, asura:"Lobhasura", title:"Day 4 · The Emerald Forest",
+    type:"bloated", bgTop:"#BFE6A0", bgMid:"#5FA85B", bgBot:"#1F4A28", loc:{hills:true},
+    hp:150, dmg:12, spd:85, atkCd:1.0,
+    power:"Ankusha", icon:"🪝",
+    intro:"Deep in the forest, bloated Lobhasura the demon of greed hoards every fallen leaf, unwilling to let anything go.",
+    victory:"As Lobhasura's grip loosens, a golden Ankusha spins into Ganesh ji's hand — quick, precise, always guiding forward.",
+    statBoost:{cooldown:-0.15} },
+
+  { day:5, asura:"Mohasura", title:"Day 5 · The Moonlit Ruins",
+    type:"foggy", bgTop:"#C7CBEF", bgMid:"#6A6FB0", bgBot:"#241F4A", loc:{pillars:true, stars:true},
+    hp:190, dmg:13, spd:90, atkCd:1.1,
+    power:"Pasha", icon:"🪢",
+    intro:"Among broken pillars, Mohasura the demon of illusion bends the moonlight itself, confusing every step.",
+    victory:"As illusion fades, a small, sharp-eyed shape scurries from behind a fallen stone — Mushak, the loyal vahan, has found his lord at last.",
+    statBoost:{dmg:5}, unlockMushak:true },
+
+  { day:6, asura:"Matsarasura", title:"Day 6 · The Coral Shore",
+    type:"manyeyed", bgTop:"#7EE8D6", bgMid:"#2FB2A6", bgBot:"#0E5C57", loc:{water:true},
+    hp:230, dmg:15, spd:100, atkCd:1.0,
+    power:"Padma", icon:"🌸",
+    intro:"On the coral shore, many-eyed Matsarasura, the demon of envy, watches every gift Ganesh ji has been given.",
+    victory:"Matsarasura dissolves into sea-foam. A lotus, Padma, blooms in Ganesh ji's palm — a gentle, unbreakable shield.",
+    statBoost:{maxHp:25} },
+
+  { day:7, asura:"Ahankarasura", title:"Day 7 · The Mountain Peak",
+    type:"armored", bgTop:"#DDEFFF", bgMid:"#8FB8E0", bgBot:"#2A4A73", loc:{hills:true, stars:true},
+    hp:270, dmg:17, spd:105, atkCd:0.95,
+    power:"Trishul", icon:"🔱",
+    intro:"At the snow-bound peak stands towering Ahankarasura, the demon of pride, certain no one can reach this high.",
+    victory:"Ahankarasura kneels at last. A trident of light, Trishul, descends from the clouds and rests in Ganesh ji's grip.",
+    statBoost:{dmg:9} },
+
+  { day:8, asura:"Bhayasura", title:"Day 8 · The Desert of Trials",
+    type:"gaunt", bgTop:"#FFE3AE", bgMid:"#E3A24D", bgBot:"#5C3212", loc:{hills:true},
+    hp:305, dmg:18, spd:110, atkCd:0.9,
+    power:"Abhaya Mudra", icon:"🤚",
+    intro:"Heat shimmers across endless dunes where gaunt Bhayasura, the demon of fear, whispers of turning back.",
+    victory:"Fear has nowhere left to hide. Ganesh ji raises his palm in Abhaya Mudra — steady, fearless, ever-healing.",
+    statBoost:{regen:1.2} },
+
+  { day:9, asura:"Mayasura", title:"Day 9 · The Storm-Wrapped Sky",
+    type:"shifting", bgTop:"#8E8FB0", bgMid:"#4A4A70", bgBot:"#16162B", loc:{stars:true, storm:true},
+    hp:340, dmg:20, spd:115, atkCd:0.85,
+    power:"Chakra", icon:"🌀",
+    intro:"Lightning splits the sky where shape-shifting Mayasura, the demon of illusion, never holds one form for long.",
+    victory:"Mayasura's illusions shatter with a single true strike. A spinning discus, Chakra, now answers Ganesh ji's call from any distance.",
+    statBoost:{dmg:4}, unlockChakra:true },
+
+  { day:10, asura:"Andhakasura", title:"Day 10 · The Cosmic Void", isFinalBoss:true,
+    type:"voidlord", bgTop:"#4A2B6E", bgMid:"#210F3C", bgBot:"#050109", loc:{stars:true, storm:true},
+    hp:430, dmg:24, spd:120, atkCd:0.8,
+    power:"Vighnaharta Shakti", icon:"✨",
+    intro:"At the edge of the void waits Andhakasura, the demon of blindness — the last and greatest obstacle of all.",
+    victory:"Andhakasura's darkness cannot stand against ten days of growing light. Every power Ganesh ji has carried joins into one: Vighnaharta Shakti.",
+    statBoost:{dmg:12,maxHp:30} },
+];
+
+/* ============================= STATE ============================= */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const GROUND_Y = 430;
+
+let gameState = 'MENU'; // MENU, INTRO, PLAY, CUTSCENE, DEFEAT, FINALE
+let levelIndex = 0; // 0-based into LEVELS
+let lastTime = 0;
+let particles = []; // floating damage text + hit sparks
+let mushakUnlocked = false;
+let chakraUnlocked = false;
+let projectiles = [];
+let flashTimer = 0; // screen flash on hits/lightning
+let lightningTimer = Math.random()*4+2;
+
+const player = {
+  x:180, y:GROUND_Y, w:70, h:90, facing:1,
+  hp:100, maxHp:100, baseDmg:10, dmg:10, range:95, cooldown:0.55,
+  atkTimer:0, atkAnim:0, hitFlash:0, regen:0, vx:0,
+  chakraCd:0
+};
+const enemy = { x:740, y:GROUND_Y, w:80, h:100, hp:60, maxHp:60, dmg:6, spd:70, atkCd:1.5, atkTimer:1,
+  hitFlash:0, state:'approach', staggerTimer:0, type:'spiky', bobT:0 };
+const mushak = { active:false, x:120, y:GROUND_Y, biteTimer:2, dashT:0 };
+
+const powersEarned = []; // {name, icon}
+
+/* -------- persistence -------- */
+function saveProgress(){
+  try{
+    localStorage.setItem('vh_progress', JSON.stringify({
+      levelIndex, mushakUnlocked, chakraUnlocked,
+      powers: powersEarned, dmg: player.dmg, maxHp: player.maxHp,
+      range: player.range, cooldown: player.cooldown, regen: player.regen
+    }));
+  }catch(e){}
+}
+function loadProgress(){
+  try{
+    const raw = localStorage.getItem('vh_progress');
+    if(!raw) return null;
+    return JSON.parse(raw);
+  }catch(e){ return null; }
+}
+function clearProgress(){ try{ localStorage.removeItem('vh_progress'); }catch(e){} }
+
+/* ============================= INPUT ============================= */
+const keys = {};
+window.addEventListener('keydown', e=>{
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
+  keys[e.key.toLowerCase()] = true;
+  if(e.key===' '||e.key==='Enter'){ advanceOverlay(); }
+  if((e.key==='z'||e.key==='Z') && gameState==='PLAY') tryAttack();
+  if((e.key==='x'||e.key==='X') && gameState==='PLAY') tryChakra();
+},{passive:false});
+window.addEventListener('keyup', e=>{ keys[e.key.toLowerCase()]=false; });
+
+function advanceOverlay(){
+  const btn = document.getElementById('card-btn');
+  if(document.getElementById('overlay-card').classList.contains('show') && btn.style.display!=='none'){
+    // allow enter/space to trigger primary button
+  }
+}
+
+/* touch controls */
+const tcLeft=document.getElementById('tc-left'), tcRight=document.getElementById('tc-right'),
+      tcAttack=document.getElementById('tc-attack'), tcChakra=document.getElementById('tc-chakra');
+function bindHold(el, onDown, onUp){
+  el.addEventListener('touchstart', e=>{e.preventDefault(); onDown();}, {passive:false});
+  el.addEventListener('touchend', e=>{e.preventDefault(); onUp&&onUp();}, {passive:false});
+  el.addEventListener('mousedown', onDown);
+  window.addEventListener('mouseup', ()=>{ onUp&&onUp(); });
+}
+bindHold(tcLeft, ()=>keys['arrowleft']=true, ()=>keys['arrowleft']=false);
+bindHold(tcRight, ()=>keys['arrowright']=true, ()=>keys['arrowright']=false);
+bindHold(tcAttack, ()=>{ if(gameState==='PLAY') tryAttack(); });
+bindHold(tcChakra, ()=>{ if(gameState==='PLAY') tryChakra(); });
+
+// detect touch device to show controls
+if('ontouchstart' in window){ document.getElementById('touch-controls').classList.add('show'); }
+
+/* ============================= COMBAT ============================= */
+function tryAttack(){
+  if(player.atkTimer>0) return;
+  player.atkTimer = player.cooldown;
+  player.atkAnim = 0.22;
+  playSwing();
+  setTimeout(()=>{
+    if(gameState!=='PLAY') return;
+    const dist = Math.abs((enemy.x)-(player.x));
+    if(dist <= player.range && enemy.hp>0){
+      const dmg = Math.round(player.dmg*(0.85+Math.random()*0.3));
+      damageEnemy(dmg);
+    }
+  }, 120);
+}
+function tryChakra(){
+  if(!chakraUnlocked) return;
+  if(player.chakraCd>0) return;
+  player.chakraCd = 1.6;
+  playChakra();
+  projectiles.push({x:player.x+player.facing*30, y:player.y-55, vx:player.facing*420, dmg:Math.round(player.dmg*0.8), life:1.6});
+}
+function damageEnemy(dmg){
+  enemy.hp = Math.max(0, enemy.hp-dmg);
+  enemy.hitFlash = 0.18;
+  flashTimer = 0.06;
+  spawnFloatText(enemy.x, enemy.y-110, '-'+dmg, '#FFDD55');
+  updateBars();
+  if(enemy.hp<=0){ onEnemyDefeated(); }
+}
+function damagePlayer(dmg){
+  player.hp = Math.max(0, player.hp-dmg);
+  player.hitFlash = 0.18;
+  spawnFloatText(player.x, player.y-110, '-'+dmg, '#FF6B6B');
+  updateBars();
+  if(player.hp<=0){ onPlayerDefeated(); }
+}
+function spawnFloatText(x,y,text,color){
+  particles.push({x,y,text,color,life:0.9,vy:-40});
+}
+
+/* ============================= LEVEL FLOW ============================= */
+function beginJourney(fromSave){
+  document.getElementById('overlay-menu').classList.remove('show');
+  if(fromSave){
+    const s = loadProgress();
+    if(s){
+      levelIndex = s.levelIndex||0;
+      mushakUnlocked = !!s.mushakUnlocked;
+      chakraUnlocked = !!s.chakraUnlocked;
+      powersEarned.length=0; (s.powers||[]).forEach(p=>powersEarned.push(p));
+      player.dmg = s.dmg||player.baseDmg;
+      player.maxHp = s.maxHp||100;
+      player.range = s.range||95;
+      player.cooldown = s.cooldown||0.55;
+      player.regen = s.regen||0;
+      mushak.active = mushakUnlocked;
+    }
+  } else {
+    clearProgress();
+    levelIndex=0; mushakUnlocked=false; chakraUnlocked=false; powersEarned.length=0;
+    player.dmg=player.baseDmg; player.maxHp=100; player.range=95; player.cooldown=0.55; player.regen=0;
+    mushak.active=false;
+  }
+  ensureAudio();
+  startLevelIntro();
+}
+
+function startLevelIntro(){
+  const L = LEVELS[levelIndex];
+  gameState = 'INTRO';
+  document.getElementById('hud').classList.remove('show');
+  showCard({
+    eyebrow: 'DAY '+L.day+' OF 10',
+    title: L.title,
+    body: L.intro + '  ·  Face '+L.asura+'.',
+    icon: null,
+    btnText: 'Face the Asura',
+    onBtn: ()=>{
+      if(L.unlockMushak && !mushakUnlocked){
+        showMushakIntro();
+      } else {
+        startFight();
+      }
+    }
+  });
+}
+
+function showMushakIntro(){
+  showCard({
+    eyebrow: 'DAY 5 · A COMPANION ARRIVES',
+    title: 'Mushak Joins the Fight',
+    body: "Small, quick, and utterly loyal — Mushak, Ganesh ji's vahan, steps out of hiding to fight at his lord's side for every battle from here on.",
+    icon: '🐭',
+    btnText: 'Continue',
+    onBtn: ()=>{ startFight(); }
+  });
+}
+
+function startFight(){
+  const L = LEVELS[levelIndex];
+  gameState = 'PLAY';
+  document.getElementById('hud').classList.add('show');
+  document.getElementById('day-badge').textContent = 'Day '+L.day+' / 10';
+  document.getElementById('enemy-name-label').textContent = L.asura;
+  document.getElementById('tc-chakra').classList.toggle('disabled', !chakraUnlocked);
+  document.getElementById('overlay-card').classList.remove('show');
+
+  player.hp = player.maxHp; player.x=180; player.facing=1; player.atkTimer=0; player.chakraCd=0;
+  enemy.hp = L.hp; enemy.maxHp = L.hp; enemy.dmg = L.dmg; enemy.spd = L.spd; enemy.atkCd = L.atkCd;
+  enemy.x = 740; enemy.type = L.type; enemy.atkTimer = 1; enemy.hitFlash=0; enemy.state='approach';
+  mushak.active = mushakUnlocked || L.unlockMushak;
+  mushak.biteTimer = 2;
+  projectiles.length = 0;
+  particles.length = 0;
+  renderPowerChips();
+  updateBars();
+}
+
+function onEnemyDefeated(){
+  gameState = 'CUTSCENE';
+  const L = LEVELS[levelIndex];
+  playLevelUp();
+  // apply stat boost
+  const b = L.statBoost||{};
+  if(b.dmg) player.dmg += b.dmg;
+  if(b.range) player.range += b.range;
+  if(b.cooldown) player.cooldown = Math.max(0.22, player.cooldown + b.cooldown);
+  if(b.maxHp){ player.maxHp += b.maxHp; player.hp = player.maxHp; }
+  if(b.regen) player.regen += b.regen;
+  if(L.unlockMushak){ mushakUnlocked = true; mushak.active = true; }
+  if(L.unlockChakra){ chakraUnlocked = true; }
+  powersEarned.push({name:L.power, icon:L.icon});
+  saveProgress();
+
+  const isLast = levelIndex === LEVELS.length-1;
+  showCard({
+    eyebrow: L.asura.toUpperCase()+' DEFEATED',
+    title: 'A New Power: '+L.power,
+    body: L.victory,
+    icon: L.icon,
+    btnText: isLast ? 'Begin the Celebration' : 'Continue the Journey — Day '+(L.day+1),
+    onBtn: ()=>{
+      if(isLast){ startFinale(); }
+      else { levelIndex++; startLevelIntro(); }
+    }
+  });
+}
+
+function onPlayerDefeated(){
+  gameState = 'DEFEAT';
+  playDefeatJingle();
+  const L = LEVELS[levelIndex];
+  showCard({
+    eyebrow: 'NOT YET, GANESH JI',
+    title: 'The Obstacle Holds Firm',
+    body: L.asura+' proves tough this time — but every ending is only a pause. Catch your breath and try again.',
+    icon: '🙏',
+    btnText: 'Try Again',
+    onBtn: ()=>{ startFight(); }
+  });
+}
+
+/* ---- generic overlay card ---- */
+function showCard({eyebrow,title,body,icon,btnText,onBtn}){
+  document.getElementById('card-eyebrow').textContent = eyebrow||'';
+  document.getElementById('card-title').textContent = title||'';
+  document.getElementById('card-body').textContent = body||'';
+  const iconEl = document.getElementById('card-icon');
+  if(icon){ iconEl.textContent = icon; iconEl.style.display='block'; } else { iconEl.style.display='none'; }
+  const btn = document.getElementById('card-btn');
+  btn.textContent = btnText;
+  btn.onclick = ()=>{ onBtn(); };
+  document.getElementById('card-btn2').style.display='none';
+  document.getElementById('overlay-card').classList.add('show');
+}
+
+function renderPowerChips(){
+  const row = document.getElementById('powers-row');
+  row.innerHTML='';
+  powersEarned.forEach(p=>{
+    const chip = document.createElement('span');
+    chip.className='power-chip';
+    chip.textContent = p.icon+' '+p.name;
+    row.appendChild(chip);
+  });
+}
+function updateBars(){
+  document.getElementById('player-bar').style.width = Math.max(0,(player.hp/player.maxHp*100))+'%';
+  document.getElementById('enemy-bar').style.width = Math.max(0,(enemy.hp/enemy.maxHp*100))+'%';
+}
+
+/* ============================= UPDATE ============================= */
+function update(dt){
+  if(gameState!=='PLAY') return;
+
+  // player movement
+  let move = 0;
+  if(keys['arrowleft']||keys['a']) move -= 1;
+  if(keys['arrowright']||keys['d']) move += 1;
+  player.x += move*220*dt;
+  player.x = Math.max(60, Math.min(W-60, player.x));
+  if(move!==0) player.facing = move>0?1:-1;
+  else if(enemy.hp>0) player.facing = enemy.x>player.x?1:-1;
+
+  player.atkTimer = Math.max(0, player.atkTimer-dt);
+  player.atkAnim = Math.max(0, player.atkAnim-dt);
+  player.hitFlash = Math.max(0, player.hitFlash-dt);
+  player.chakraCd = Math.max(0, player.chakraCd-dt);
+  if(player.regen>0 && player.hp<player.maxHp){
+    player.hp = Math.min(player.maxHp, player.hp + player.regen*dt);
+    updateBars();
+  }
+
+  // enemy AI
+  if(enemy.hp>0){
+    enemy.hitFlash = Math.max(0, enemy.hitFlash-dt);
+    enemy.bobT += dt;
+    const dx = player.x - enemy.x;
+    const dist = Math.abs(dx);
+    const engageRange = player.range*0.85;
+    if(dist > engageRange){
+      enemy.x += Math.sign(dx)*enemy.spd*dt;
+      enemy.state='approach';
+    } else {
+      enemy.state='attack';
+      enemy.atkTimer -= dt;
+      if(enemy.atkTimer<=0){
+        enemy.atkTimer = enemy.atkCd;
+        // small telegraph via hitFlash reuse
+        damagePlayer(enemy.dmg);
+        playHit();
+      }
+    }
+  }
+
+  // mushak companion
+  if(mushak.active && enemy.hp>0){
+    mushak.biteTimer -= dt;
+    mushak.dashT = Math.max(0, mushak.dashT-dt);
+    if(mushak.biteTimer<=0){
+      mushak.biteTimer = 3.2;
+      mushak.dashT = 0.35;
+      const bonus = Math.round(4+player.dmg*0.18);
+      setTimeout(()=>{ if(gameState==='PLAY' && enemy.hp>0){ damageEnemy(bonus); playHit(); } }, 180);
+    }
+  }
+
+  // projectiles (chakra)
+  for(let i=projectiles.length-1;i>=0;i--){
+    const p = projectiles[i];
+    p.x += p.vx*dt; p.life -= dt;
+    if(enemy.hp>0 && Math.abs(p.x-enemy.x)<50 && Math.abs(p.y-(enemy.y-60))<70){
+      damageEnemy(p.dmg); playHit();
+      projectiles.splice(i,1); continue;
+    }
+    if(p.life<=0 || p.x<0 || p.x>W) projectiles.splice(i,1);
+  }
+
+  // particles
+  for(let i=particles.length-1;i>=0;i--){
+    const pt = particles[i];
+    pt.life -= dt; pt.y += pt.vy*dt*0.5;
+    if(pt.life<=0) particles.splice(i,1);
+  }
+
+  flashTimer = Math.max(0, flashTimer-dt);
+
+  const L = LEVELS[levelIndex];
+  if(L.loc.storm){
+    lightningTimer -= dt;
+    if(lightningTimer<=0){ lightningTimer = Math.random()*5+3; flashTimer=0.09; }
+  }
+}
+
+/* ============================= RENDER ============================= */
+function lerpColor(a,b,t){
+  const ah=parseInt(a.slice(1),16), bh=parseInt(b.slice(1),16);
+  const ar=(ah>>16)&255, ag=(ah>>8)&255, ab=ah&255;
+  const br=(bh>>16)&255, bg=(bh>>8)&255, bb=bh&255;
+  const r=Math.round(ar+(br-ar)*t), g=Math.round(ag+(bg-ag)*t), bl=Math.round(ab+(bb-ab)*t);
+  return `rgb(${r},${g},${bl})`;
+}
+
+function drawBackground(){
+  const L = gameState==='PLAY'||gameState==='CUTSCENE'||gameState==='DEFEAT' ? LEVELS[levelIndex] : LEVELS[0];
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0, L.bgTop); grad.addColorStop(0.55, L.bgMid); grad.addColorStop(1, L.bgBot);
+  ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
+
+  if(L.loc.stars){
+    ctx.fillStyle='rgba(255,255,255,0.8)';
+    for(let i=0;i<40;i++){
+      const sx=(i*197)%W, sy=(i*89)%(GROUND_Y-60);
+      const tw = 0.5+0.5*Math.sin(performance.now()/500+i);
+      ctx.globalAlpha = 0.3+0.5*tw;
+      ctx.fillRect(sx,sy,2,2);
+    }
+    ctx.globalAlpha=1;
+  }
+  if(L.loc.hills){
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.beginPath(); ctx.moveTo(0,GROUND_Y);
+    for(let x=0;x<=W;x+=40){ ctx.lineTo(x, GROUND_Y-40-30*Math.sin(x*0.01+2)); }
+    ctx.lineTo(W,GROUND_Y); ctx.closePath(); ctx.fill();
+  }
+  if(L.loc.water){
+    ctx.fillStyle='rgba(255,255,255,0.12)';
+    const t = performance.now()/600;
+    for(let x=0;x<W;x+=60){ ctx.fillRect(x, GROUND_Y+18+6*Math.sin(t+x), 34,3); }
+  }
+  if(L.loc.pillars){
+    ctx.fillStyle='rgba(0,0,0,0.28)';
+    for(let x=80;x<W;x+=220){ ctx.fillRect(x,GROUND_Y-170,26,170); ctx.fillRect(x-8,GROUND_Y-186,42,16); }
+  }
+  if(L.loc.embers){
+    const t=performance.now()/16;
+    for(let i=0;i<22;i++){
+      const ex=(i*137 + t*0.4)%W;
+      const ey=GROUND_Y - ((t*0.6+i*53)%(GROUND_Y-40));
+      ctx.fillStyle = i%2? 'rgba(255,140,40,0.8)':'rgba(255,210,80,0.7)';
+      ctx.beginPath(); ctx.arc(ex,ey,2+((i%3)),0,7); ctx.fill();
+    }
+  }
+  if(L.loc.storm && flashTimer>0.03){
+    ctx.fillStyle='rgba(255,255,255,'+(flashTimer*3)+')';
+    ctx.fillRect(0,0,W,H);
+  }
+
+  // ground
+  const groundGrad = ctx.createLinearGradient(0,GROUND_Y,0,H);
+  groundGrad.addColorStop(0,'rgba(0,0,0,0.35)'); groundGrad.addColorStop(1,'rgba(0,0,0,0.6)');
+  ctx.fillStyle=groundGrad; ctx.fillRect(0,GROUND_Y,W,H-GROUND_Y);
+  ctx.strokeStyle='rgba(255,215,140,0.25)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(0,GROUND_Y); ctx.lineTo(W,GROUND_Y); ctx.stroke();
+}
+
+function drawGanesh(x,y,facing,attackAnim,hitFlash,hasMushakVisualHint){
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.scale(facing,1);
+  if(hitFlash>0){ ctx.filter='brightness(1.8) saturate(0.4)'; }
+
+  // shadow
+  ctx.fillStyle='rgba(0,0,0,0.35)';
+  ctx.beginPath(); ctx.ellipse(0,4,34,9,0,0,7); ctx.fill();
+
+  const swing = attackAnim>0 ? Math.sin((0.22-attackAnim)/0.22*Math.PI) : 0;
+
+  // dhoti / lower body
+  ctx.fillStyle='#C0392B';
+  ctx.beginPath(); ctx.moveTo(-24,-6); ctx.lineTo(24,-6); ctx.lineTo(16,-58); ctx.lineTo(-16,-58); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='#FFD873'; ctx.lineWidth=2; ctx.stroke();
+
+  // torso
+  ctx.fillStyle='#E8703A';
+  ctx.beginPath(); ctx.ellipse(0,-66,20,22,0,0,7); ctx.fill();
+
+  // back arm (weapon-holding), swings on attack
+  ctx.save();
+  ctx.translate(10,-70); ctx.rotate(-0.3 - swing*1.3);
+  ctx.fillStyle='#E8703A'; ctx.fillRect(0,-4,30,9);
+  // simple weapon glyph on hand
+  ctx.font='16px sans-serif'; ctx.textAlign='center';
+  ctx.fillText(currentWeaponGlyph(), 34, 4);
+  ctx.restore();
+
+  // front arm
+  ctx.save();
+  ctx.translate(-8,-70); ctx.rotate(0.25);
+  ctx.fillStyle='#E8703A'; ctx.fillRect(-26,-4,26,9);
+  ctx.restore();
+
+  // ears
+  ctx.fillStyle='#5B3A29';
+  ctx.beginPath(); ctx.ellipse(-6,-92,17,20,-0.3,0,7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(18,-92,17,20,0.3,0,7); ctx.fill();
+  ctx.fillStyle='#7A5340';
+  ctx.beginPath(); ctx.ellipse(-6,-92,10,12,-0.3,0,7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(18,-92,10,12,0.3,0,7); ctx.fill();
+
+  // head
+  ctx.fillStyle='#8C5B3F';
+  ctx.beginPath(); ctx.ellipse(4,-96,19,18,0,0,7); ctx.fill();
+
+  // crown
+  ctx.fillStyle='#D4AF37';
+  ctx.beginPath(); ctx.moveTo(-8,-112); ctx.lineTo(2,-128); ctx.lineTo(10,-114); ctx.lineTo(18,-126); ctx.lineTo(20,-110); ctx.closePath(); ctx.fill();
+
+  // trunk (curves with a subtle idle sway)
+  const trunkSway = Math.sin(performance.now()/450)*4;
+  ctx.strokeStyle='#8C5B3F'; ctx.lineWidth=9; ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(10,-92);
+  ctx.quadraticCurveTo(20+trunkSway,-72, 12+trunkSway,-52);
+  ctx.stroke();
+
+  // single tusk
+  ctx.strokeStyle='#FFF7E0'; ctx.lineWidth=4;
+  ctx.beginPath(); ctx.moveTo(16,-90); ctx.lineTo(24,-82); ctx.stroke();
+
+  // eye
+  ctx.fillStyle='#2A1810';
+  ctx.beginPath(); ctx.arc(10,-100,2.6,0,7); ctx.fill();
+
+  ctx.restore();
+}
+
+function currentWeaponGlyph(){
+  if(powersEarned.length===0) return '✋';
+  return powersEarned[powersEarned.length-1].icon;
+}
+
+function drawMushak(x,y,dashT){
+  ctx.save();
+  const dash = dashT>0 ? (0.35-dashT)/0.35*20 : 0;
+  ctx.translate(x+dash, y);
+  ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(0,3,14,4,0,0,7); ctx.fill();
+  ctx.fillStyle='#9B9B9B';
+  ctx.beginPath(); ctx.ellipse(0,-10,15,10,0,0,7); ctx.fill(); // body
+  ctx.beginPath(); ctx.ellipse(14,-14,7,6,0,0,7); ctx.fill(); // head
+  ctx.fillStyle='#E8A0A0';
+  ctx.beginPath(); ctx.ellipse(15,-19,3,4,0.3,0,7); ctx.fill(); // ear
+  ctx.fillStyle='#2A1810';
+  ctx.beginPath(); ctx.arc(17,-15,1.2,0,7); ctx.fill();
+  ctx.strokeStyle='#9B9B9B'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(-14,-8); ctx.quadraticCurveTo(-26,-2,-20,6); ctx.stroke(); // tail
+  ctx.restore();
+}
+
+function drawAsura(x,y,type,hitFlash,bobT){
+  ctx.save();
+  const bob = Math.sin(bobT*3)*4;
+  ctx.translate(x,y+bob);
+  if(hitFlash>0){ ctx.filter='brightness(2) saturate(0.3)'; }
+  ctx.fillStyle='rgba(0,0,0,0.35)';
+  ctx.beginPath(); ctx.ellipse(0,4,38,10,0,0,7); ctx.fill();
+
+  const palettes = {
+    spiky:{base:'#6B8E23', dark:'#3E5A14', eye:'#FFD966'},
+    wispy:{base:'#5B4E9E', dark:'#332A63', eye:'#B9F3FF'},
+    flame:{base:'#E0451F', dark:'#7A1F0C', eye:'#FFE066'},
+    bloated:{base:'#C9A227', dark:'#7A5E0F', eye:'#FF4D4D'},
+    foggy:{base:'#BFC3E8', dark:'#6E71A6', eye:'#4A2E7A'},
+    manyeyed:{base:'#2FA6A0', dark:'#155E5A', eye:'#FFE066'},
+    armored:{base:'#B8860B', dark:'#5C4409', eye:'#F5F5F5'},
+    gaunt:{base:'#8A7864', dark:'#4A3E30', eye:'#E0451F'},
+    shifting:{base:'#7A6BAE', dark:'#443A6B', eye:'#D9FFEA'},
+    voidlord:{base:'#241636', dark:'#0D0715', eye:'#FF3B3B'}
+  };
+  const pal = palettes[type]||palettes.spiky;
+
+  // body base
+  ctx.fillStyle = pal.base;
+  ctx.beginPath(); ctx.ellipse(0,-48,32,44,0,0,7); ctx.fill();
+  ctx.fillStyle = pal.dark;
+  ctx.beginPath(); ctx.ellipse(0,-30,26,20,0,0,7); ctx.fill();
+
+  // type-specific features
+  ctx.fillStyle = pal.dark;
+  if(type==='spiky'){
+    for(let i=-3;i<=3;i++){ ctx.beginPath(); ctx.moveTo(i*10,-84); ctx.lineTo(i*10-4,-100); ctx.lineTo(i*10+4,-100); ctx.closePath(); ctx.fill(); }
+  } else if(type==='wispy'){
+    ctx.globalAlpha=0.55;
+    for(let i=0;i<4;i++){ ctx.beginPath(); ctx.ellipse(-20+i*14,-70-i*4,10,18,0,0,7); ctx.fill(); }
+    ctx.globalAlpha=1;
+  } else if(type==='flame'){
+    ctx.fillStyle='#FFB84D';
+    for(let i=-1;i<=1;i++){ ctx.beginPath(); ctx.moveTo(i*16,-82); ctx.quadraticCurveTo(i*16+6,-105,i*16,-118); ctx.quadraticCurveTo(i*16-6,-105,i*16,-82); ctx.fill(); }
+  } else if(type==='bloated'){
+    ctx.beginPath(); ctx.ellipse(0,-40,38,34,0,0,7); ctx.fill();
+  } else if(type==='foggy'){
+    ctx.globalAlpha=0.4; ctx.fillStyle='#fff';
+    for(let i=0;i<5;i++){ ctx.beginPath(); ctx.arc(-25+i*13,-60+Math.sin(bobT+i)*6,14,0,7); ctx.fill(); }
+    ctx.globalAlpha=1;
+  } else if(type==='manyeyed'){
+    ctx.fillStyle=pal.eye;
+    for(let i=-2;i<=2;i++){ ctx.beginPath(); ctx.arc(i*11,-70,4,0,7); ctx.fill(); }
+  } else if(type==='armored'){
+    ctx.fillStyle='#F5D97A';
+    ctx.fillRect(-28,-80,56,14);
+    ctx.beginPath(); ctx.moveTo(0,-118); ctx.lineTo(-10,-96); ctx.lineTo(10,-96); ctx.closePath(); ctx.fill();
+  } else if(type==='gaunt'){
+    ctx.strokeStyle=pal.dark; ctx.lineWidth=6;
+    ctx.beginPath(); ctx.moveTo(-30,-70); ctx.lineTo(-46,-50); ctx.moveTo(30,-70); ctx.lineTo(46,-50); ctx.stroke();
+  } else if(type==='shifting'){
+    ctx.globalAlpha=0.6; ctx.fillStyle=pal.base;
+    ctx.beginPath(); ctx.ellipse(10,-50,30,40,0.3,0,7); ctx.fill();
+    ctx.globalAlpha=1;
+  } else if(type==='voidlord'){
+    ctx.fillStyle='#000';
+    ctx.beginPath(); ctx.ellipse(0,-50,40,54,0,0,7); ctx.fill();
+    ctx.fillStyle=pal.dark;
+    ctx.beginPath(); ctx.ellipse(0,-30,30,22,0,0,7); ctx.fill();
+    for(let i=-1;i<=1;i+=2){ ctx.beginPath(); ctx.moveTo(i*24,-90); ctx.lineTo(i*24+i*14,-118); ctx.lineTo(i*24+i*4,-88); ctx.closePath(); ctx.fillStyle='#000'; ctx.fill(); }
+  }
+
+  // eyes (default pair unless manyeyed handled above)
+  if(type!=='manyeyed'){
+    ctx.fillStyle = pal.eye;
+    ctx.beginPath(); ctx.arc(-10,-70,4.5,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(10,-70,4.5,0,7); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawProjectiles(){
+  const t = performance.now()/70;
+  projectiles.forEach(p=>{
+    ctx.save();
+    ctx.translate(p.x,p.y);
+    ctx.rotate(t);
+    ctx.fillStyle='#D4AF37';
+    ctx.beginPath(); ctx.arc(0,0,12,0,7); ctx.fill();
+    ctx.fillStyle='#7A1F1F';
+    ctx.beginPath(); ctx.arc(0,0,4,0,7); ctx.fill();
+    ctx.restore();
+  });
+}
+
+function drawParticles(){
+  particles.forEach(pt=>{
+    ctx.globalAlpha = Math.max(0,pt.life);
+    ctx.fillStyle = pt.color;
+    ctx.font='bold 20px Poppins, sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(pt.text, pt.x, pt.y);
+    ctx.globalAlpha=1;
+  });
+}
+
+function render(){
+  ctx.clearRect(0,0,W,H);
+  drawBackground();
+
+  if(gameState==='PLAY' || gameState==='DEFEAT'){
+    if(enemy.hp>0){ drawAsura(enemy.x, enemy.y, enemy.type, enemy.hitFlash, enemy.bobT); }
+    drawGanesh(player.x, player.y, player.facing, player.atkAnim, player.hitFlash);
+    if(mushak.active){ drawMushak(player.x-46, player.y, mushak.dashT); }
+    drawProjectiles();
+    drawParticles();
+  } else if(gameState==='CUTSCENE' || gameState==='INTRO'){
+    drawGanesh(player.x, player.y, 1, 0, 0);
+    if(mushak.active){ drawMushak(player.x-46, player.y, 0); }
+  }
+
+  if(flashTimer>0 && gameState==='PLAY'){
+    ctx.fillStyle='rgba(255,255,255,'+(flashTimer*2)+')';
+    ctx.fillRect(0,0,W,H);
+  }
+}
+
+/* ============================= FINALE ============================= */
+const fcanvas = document.getElementById('finale-canvas2');
+let fctx, confetti = [], fireworks = [];
+function startFinale(){
+  gameState='FINALE';
+  document.getElementById('hud').classList.remove('show');
+  document.getElementById('overlay-card').classList.remove('show');
+  document.getElementById('touch-controls').classList.remove('show');
+  fcanvas.width = 960; fcanvas.height = 540;
+  fctx = fcanvas.getContext('2d');
+  confetti = [];
+  const colors=['#FFD873','#FF9933','#E8703A','#C0392B','#F4E3B8','#7A1F1F'];
+  for(let i=0;i<140;i++){
+    confetti.push({x:Math.random()*960, y:-Math.random()*540, vy:60+Math.random()*90, vx:(Math.random()-0.5)*40,
+      size:4+Math.random()*6, color:colors[i%colors.length], rot:Math.random()*7, vr:(Math.random()-0.5)*4});
+  }
+  fireworks = [];
+  document.getElementById('overlay-finale').classList.add('show');
+  setTimeout(playVictoryFanfare, 200);
+  spawnFirework(); 
+  clearProgress();
+  requestAnimationFrame(finaleLoop);
+}
+function spawnFirework(){
+  if(gameState!=='FINALE') return;
+  const cx = 120+Math.random()*720, cy=120+Math.random()*180;
+  const colors=['#FFD873','#FF9933','#7EE8D6','#FF6B6B','#B9A0FF'];
+  const color = colors[Math.floor(Math.random()*colors.length)];
+  const parts=[];
+  for(let i=0;i<36;i++){
+    const a = (i/36)*Math.PI*2;
+    parts.push({x:cx,y:cy,vx:Math.cos(a)*(90+Math.random()*70),vy:Math.sin(a)*(90+Math.random()*70),life:1});
+  }
+  fireworks.push({parts,color});
+  setTimeout(spawnFirework, 700+Math.random()*900);
+}
+let fLast=0;
+function finaleLoop(ts){
+  if(gameState!=='FINALE') return;
+  const dt = Math.min(0.05,(ts-(fLast||ts))/1000); fLast=ts;
+  fctx.clearRect(0,0,960,540);
+  // confetti
+  confetti.forEach(c=>{
+    c.y+=c.vy*dt; c.x+=c.vx*dt; c.rot+=c.vr*dt;
+    if(c.y>560){ c.y=-10; c.x=Math.random()*960; }
+    fctx.save(); fctx.translate(c.x,c.y); fctx.rotate(c.rot);
+    fctx.fillStyle=c.color; fctx.fillRect(-c.size/2,-c.size/2,c.size,c.size*1.6);
+    fctx.restore();
+  });
+  // fireworks
+  for(let fi=fireworks.length-1; fi>=0; fi--){
+    const fw = fireworks[fi];
+    let alive=false;
+    fw.parts.forEach(p=>{
+      p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=60*dt; p.life-=dt*0.6;
+      if(p.life>0){ alive=true;
+        fctx.globalAlpha=Math.max(0,p.life);
+        fctx.fillStyle=fw.color;
+        fctx.beginPath(); fctx.arc(p.x,p.y,3,0,7); fctx.fill();
+        fctx.globalAlpha=1;
+      }
+    });
+    if(!alive) fireworks.splice(fi,1);
+  }
+  requestAnimationFrame(finaleLoop);
+}
+
+/* ============================= MAIN LOOP ============================= */
+function loop(ts){
+  const dt = Math.min(0.05, (ts-(lastTime||ts))/1000);
+  lastTime = ts;
+  update(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* ============================= UI WIRING ============================= */
+document.getElementById('btn-begin').addEventListener('click', ()=>{ ensureAudio(); beginJourney(false); });
+document.getElementById('btn-continue').addEventListener('click', ()=>{ ensureAudio(); beginJourney(true); });
+document.getElementById('btn-replay').addEventListener('click', ()=>{
+  document.getElementById('overlay-finale').classList.remove('show');
+  fireworks=[]; confetti=[];
+  levelIndex=0; mushakUnlocked=false; chakraUnlocked=false; powersEarned.length=0;
+  player.dmg=player.baseDmg; player.maxHp=100; player.range=95; player.cooldown=0.55; player.regen=0;
+  mushak.active=false;
+  document.getElementById('overlay-menu').classList.add('show');
+  gameState='MENU';
+});
+document.getElementById('mute-btn').addEventListener('click', function(){
+  soundOn = !soundOn;
+  try{ localStorage.setItem('vh_sound', soundOn?'on':'off'); }catch(e){}
+  this.textContent = soundOn ? '🔊' : '🔇';
+});
+document.getElementById('mute-btn').textContent = soundOn ? '🔊' : '🔇';
+
+let paused=false, prevState=null;
+document.getElementById('pause-btn').addEventListener('click', function(){
+  if(gameState!=='PLAY' && !paused) return;
+  if(!paused){
+    paused=true; prevState=gameState; gameState='PAUSED_INTERNAL';
+    this.textContent='▶';
+  } else {
+    paused=false; gameState=prevState; this.textContent='⏸';
+  }
+});
+// keep update() a no-op while PAUSED_INTERNAL since it only runs on 'PLAY'
+
+/* show "continue" button if a save exists */
+(function initMenu(){
+  const s = loadProgress();
+  if(s && (s.levelIndex>0)){
+    document.getElementById('btn-continue').style.display='inline-block';
+  }
+})();
+
+})();
+</script>
+</body>
+</html>
